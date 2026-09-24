@@ -19,6 +19,8 @@
     "@libsql/client": "^0.14.0",
     "@prisma/adapter-libsql": "^6.5.0",
     "@prisma/client": "^6.5.0",
+    "@supabase/server": "^0.1.0",
+    "@supabase/supabase-js": "^2.49.1",
     "bcryptjs": "^2.4.3",
     "next": "16.3.5",
     "react": "19.2.8",
