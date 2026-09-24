@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Cosa Nostra / The Godfather Club — Ranking real y torneos de dominó.">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cosa Nostra">
+  <title>Cosa Nostra / The Godfather Club</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    @media (max-width: 640px) {
+      .ranking-table th:nth-child(6),
+      .ranking-table td:nth-child(6) { display: none; }
+    }
+    /* Install banner */
+    #pwaInstallBar {
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      left: 12px;
+      right: 12px;
+      z-index: 999;
+      background: #141414;
+      border: 1px solid #D4AF37;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      align-items: center;
+      gap: 12px;
+      transform: translate3d(0, 120%, 0);
+      opacity: 0;
+    }
+    #pwaInstallBar.show {
+      display: flex;
+      animation: install-bar-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    #pwaInstallBar p { flex: 1; margin: 0; font-size: 0.9rem; color: #F2F2F2; }
+    #pwaInstallBar button { white-space: nowrap; }
+    #pushNotifyBar {
+      display: none;
+      position: fixed;
+      bottom: 80px;
+      left: 12px;
+      right: 12px;
+      z-index: 998;
+      background: #141414;
+      border: 1px solid #E8DCC4;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      align-items: center;
+      gap: 12px;
+    }
+    #pushNotifyBar.show { display: flex; }
+    #pushNotifyBar p { flex: 1; margin: 0; font-size: 0.9rem; color: #F2F2F2; }
+    #pushNotifyBar button { white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+  <!-- Fondo temático + fichas de dominó en atmósfera -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="domino-field" id="dominoField"></div>
+  </div>
+
+  <nav class="navbar" id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo" data-page="home">
+        <img src="img/logo.jpeg" alt="Cosa Nostra">
+        <div class="nav-logo-text">
+          <span class="nav-logo-title">Cosa Nostra</span>
+          <span class="nav-logo-sub">The Godfather Club</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#" data-page="home">Inicio</a></li>
+        <li><a href="#" data-page="ranking">Ranking</a></li>
+        <li><a href="#" data-page="torneos">Torneos</a></li>
+        <li><a href="#" data-page="reglamento">Reglamento FVD</a></li>
+        <li class="nav-admin hidden" id="navAdminDesktop"><a href="#" data-page="admin">Admin</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button type="button" class="notif-bell" id="notifBell" aria-label="Notificaciones" title="Notificaciones">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm6.3-6V11a6.3 6.3 0 0 0-5-6.15V4a1.3 1.3 0 1 0-2.6 0v.85A6.3 6.3 0 0 0 5.7 11v5L4 18v1h16v-1l-1.7-2z"/></svg>
+          <span class="notif-badge is-empty" id="notifBadge">0</span>
+        </button>
+        <span id="connStatus" class="conn-status" title="Estado de conexión">○</span>
+        <button class="btn btn-outline" id="btnLogin" data-page="login" style="padding:8px 14px;font-size:0.8rem;">Entrar</button>
+        <button class="btn btn-outline hidden" id="btnProfile" data-page="perfil" style="padding:8px 14px;font-size:0.8rem;">Mi Perfil</button>
+        <button class="btn btn-ghost hidden" id="btnLogout" type="button" style="padding:8px 10px;font-size:0.8rem;">Salir</button>
+        <button class="nav-toggle" id="navToggle" aria-label="Menú"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#" data-page="home">Inicio</a>
+    <a href="#" data-page="ranking">Ranking</a>
+    <a href="#" data-page="torneos">Torneos</a>
+    <a href="#" data-page="reglamento">Reglamento FVD</a>
+    <a href="#" data-page="admin" class="nav-admin hidden" id="navAdminMobile">Admin</a>
+  </div>
+
+  <div class="page" id="page-home">
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content reveal-on-scroll">
+        <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span> Domino Legends</div>
+        <h1 class="hero-title">Cosa Nostra</h1>
+        <p class="hero-subtitle">The Godfather Club</p>
+        <p class="hero-manifesto">
+          Donde el dominó se juega con honor, estrategia y respeto.<br>
+          Ranking real basado en torneos de BetaDomino.
+        </p>
+        <div class="hero-cta-group">
+          <button class="btn btn-primary" data-page="ranking">Ver Ranking</button>
+          <button class="btn btn-outline" data-page="torneos">Torneos Realizados</button>
+        </div>
+      </div>
+    </section>
+    <section>
+      <div class="container">
+        <div class="section-label">La Familia</div>
+        <h2 class="section-title">Más que un club.<br>Una hermandad de fichas.</h2>
+        <p class="section-subtitle">
+          Ranking acumulado con datos reales. Cada victoria y cada punto de efectividad cuentan.
+        </p>
+        <div class="cards-grid">
+          <div class="card">
+            <div class="section-label" style="margin-bottom:12px;">01</div>
+            <h3 class="card-title">Ranking Real</h3>
+            <p class="card-desc">Clasificación por partidas ganadas, efectividad y porcentaje de victorias.</p>
+          </div>
+          <div class="card">
+            <div class="section-label" style="margin-bottom:12px;">02</div>
+            <h3 class="card-title">Torneos Archivados</h3>
+            <p class="card-desc">Consulta el resultado completo de cada torneo finalizado.</p>
+          </div>
+          <div class="card">
+            <div class="section-label" style="margin-bottom:12px;">03</div>
+            <h3 class="card-title">Instalable</h3>
+            <p class="card-desc">Añade Cosa Nostra a tu pantalla de inicio y úsala como app.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="page" id="page-ranking">
+    <section>
+      <div class="container">
+        <div class="section-label">Temporada 2026</div>
+        <h2 class="section-title">Ranking Global</h2>
+        <p class="section-subtitle" id="rankingMeta">Cargando…</p>
+        <div style="overflow-x:auto;">
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Jugador</th>
+                <th>PG</th>
+                <th>EFE</th>
+                <th>AVG</th>
+                <th>Actividad</th>
+              </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+          </table>
+        </div>
+        <p class="mt-8 text-center" style="color:var(--gray-alias);font-size:0.85rem;">
+          Fórmula: Partidas Ganadas → Efectividad → % Victorias → Partidas Jugadas
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <div class="page" id="page-torneos">
+    <section>
+      <div class="container">
+        <div class="section-label">Archivo</div>
+        <h2 class="section-title">Torneos Realizados</h2>
+        <p class="section-subtitle">Toca un torneo para ver la tabla completa.</p>
+        <div class="cards-grid" id="torneosGrid"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="page" id="page-reglamento">
+    <section>
+      <div class="container">
+        <div class="section-label">Normativa Oficial</div>
+        <h2 class="section-title">Compendio Reglamento F.V.D.</h2>
+        <p class="section-subtitle">
+          Compendio oficial del Reglamento de la Federación Venezolana de Dominó (13 Capítulos, 136 Artículos) e Infracciones.
+        </p>
+
+        <!-- Bloques resumen de Tiempos y Categorías FVD -->
+        <div class="cards-grid" style="margin-bottom:28px;">
+          <div class="card">
+            <div class="section-label" style="margin-bottom:8px;">Tiempos de Juego</div>
+            <h3 class="card-title" style="font-size:1.1rem;">Límites de Jugada</h3>
+            <p class="card-desc" style="font-size:0.85rem;">
+              ⏱ <strong>Jugada Típica:</strong> Máx. 20 segundos.<br>
+              🧠 <strong>Tranca / Cierre:</strong> Máx. 60 segundos.<br>
+              🛑 <strong>Paso:</strong> Máx. 10 segundos.<br>
+              🚫 Prohibido golpear las fichas contra la mesa.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="section-label" style="margin-bottom:8px;">Categorías FVD</div>
+            <h3 class="card-title" style="font-size:1.1rem;">Edades Federativas</h3>
+            <p class="card-desc" style="font-size:0.85rem;">
+              👶 <strong>Sub-12:</strong> Hasta 12 años cumplidos.<br>
+              👦 <strong>Sub-15:</strong> Hasta 15 años cumplidos.<br>
+              🧑 <strong>Sub-18:</strong> Hasta 18 años cumplidos.<br>
+              🏆 <strong>Abierta:</strong> Mayores de 18 años.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="section-label" style="margin-bottom:8px;">Mecánica de Juego</div>
+            <h3 class="card-title" style="font-size:1.1rem;">Reglas Clave</h3>
+            <p class="card-desc" style="font-size:0.85rem;">
+              🎴 <strong>Piedra Tocada, Piedra Jugada:</strong> Si la ficha tocada tiene cabida, debe jugarse.<br>
+              🔄 <strong>Salidor:</strong> Se mezclan fichas boca abajo y levanta una cada jugador; sale la mayor.
+            </p>
+          </div>
+        </div>
+
+        <!-- Estructura de Capítulos del Reglamento -->
+        <div style="background:#141414; border:1px solid var(--gold-border, #D4AF37); border-radius:12px; padding:16px 20px; margin-bottom:28px;">
+          <h3 style="margin:0 0 12px 0; font-size:1.1rem; color:var(--gold, #D4AF37);">Estructura del Reglamento FVD (13 Capítulos)</h3>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; font-size:0.85rem; color:var(--gray-alias, #a0a0a0);">
+            <div><strong>Cap. I (Arts. 1-1):</strong> Generalidades y ámbito federativo.</div>
+            <div><strong>Cap. II (Arts. 2-6):</strong> Del Juego de Dominó y Juego Limpio.</div>
+            <div><strong>Cap. III (Arts. 7-14):</strong> Autoridades (Junta Directiva, Consejo).</div>
+            <div><strong>Cap. IV (Arts. 15-33):</strong> Atletas, Afiliación, Ficha y Carnet Nacional.</div>
+            <div><strong>Cap. V (Arts. 34-43):</strong> Comisión Técnica y Cuerpo Arbitral.</div>
+            <div><strong>Cap. VI (Arts. 44-49):</strong> Clasificación de Atletas por Categorías.</div>
+            <div><strong>Cap. VII (Arts. 50-56):</strong> Selecciones Nacionales y Representación.</div>
+            <div><strong>Cap. VIII (Arts. 57-65):</strong> Formalidades, Uniformes y Distintivos.</div>
+            <div><strong>Cap. IX (Arts. 66-81):</strong> Competencias, Puntuación y Sistema Suizo.</div>
+            <div><strong>Cap. X (Arts. 82-114):</strong> Sanciones, Infracciones y Tarjetas.</div>
+            <div><strong>Cap. XI (Arts. 115-133):</strong> Circuito Federativo y Torneos Nacionales.</div>
+            <div><strong>Cap. XII (Art. 134):</strong> Supervisión a Asociaciones Estadales.</div>
+            <div><strong>Cap. XIII (Arts. 135-136):</strong> Disposiciones Finales y Vigencia.</div>
+          </div>
+        </div>
+
+        <h3 style="margin:0 0 12px 0; font-size:1.2rem; color:#fff;">Tabla Oficial de Sanciones e Infracciones (Arts. 85 a 115)</h3>
+        <input type="text" id="rulesSearchInput" class="rules-search" aria-label="Buscar infracción" placeholder="🔍 Buscar infracción (ej. paso, celular, cabra, retraso, art. 93, tranca)..." oninput="filterRules()">
+
+        <div style="overflow-x:auto;">
+          <table class="ranking-table" id="rulesTable">
+            <thead>
+              <tr>
+                <th style="width:70px;">Art.</th>
+                <th>Infracción</th>
+                <th>Amonestación / Procedimiento</th>
+                <th style="width:80px; text-align:center;">Tarjeta</th>
+                <th style="width:110px;">Penalidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>85</strong></td>
+                <td>Retraso en la mesa</td>
+                <td>Después de 2 min. Pierde 200/0, los otros ganan 100/0</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>200/0</td>
+              </tr>
+              <tr>
+                <td rowspan="3"><strong>86</strong></td>
+                <td>Tiempo de jugadas 5/20/60 Seg., Pensadas, Retraso de jugadas</td>
+                <td>Primera vez amonestación verbal.</td>
+                <td style="text-align:center;">—</td>
+                <td>Verbal</td>
+              </tr>
+              <tr>
+                <td rowspan="2">Todo retraso no justificado (conducta antideportiva)</td>
+                <td>Reincidencia del mismo partido/partidos, finaliza la mano, *1-MCP</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td>Reincidencia Tarjeta Amarilla y se convierte a Roja; Pérdida del partido</td>
+                <td style="text-align:center;"><span class="badge-card card-red" title="Roja">R</span></td>
+                <td>200/0</td>
+              </tr>
+              <tr>
+                <td><strong>87</strong></td>
+                <td>Fumar, Comer, Beber (Influencias Alcohólica u otro)</td>
+                <td>Pérdida del partido (entorpecer el desarrollo de la competencia)</td>
+                <td style="text-align:center;"><span class="badge-card card-red" title="Roja">R</span></td>
+                <td>200/1</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>88</strong></td>
+                <td rowspan="2">Prohibido hablar y/o uso de celular, Tableta u otro similar</td>
+                <td>Amonestación Verbal</td>
+                <td style="text-align:center;">—</td>
+                <td>Verbal</td>
+              </tr>
+              <tr>
+                <td>Reincidencia, la mano concluye *1 - MCP</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>89</strong></td>
+                <td rowspan="2">Manos debajo mesa, Postura Uniforme, Gestos, Señas, Silencio</td>
+                <td>Tarjeta Amarilla con resta de 80 Puntos y fin de la mano. *1</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>80 Puntos</td>
+              </tr>
+              <tr>
+                <td>A excepción de señas (ver artículo 87 / falta grave)</td>
+                <td style="text-align:center;"><span class="badge-card card-red" title="Roja">R</span></td>
+                <td>200/0</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>90</strong></td>
+                <td rowspan="2">Quejas o recriminar conductas</td>
+                <td>Advertencia Verbal</td>
+                <td style="text-align:center;">—</td>
+                <td>Verbal</td>
+              </tr>
+              <tr>
+                <td>Repetirse conducta, tarjeta Amarilla (se puede penalizar a ambos) *1 - MCP</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>91</strong></td>
+                <td rowspan="2">No conversación entre atletas, no alzar la Voz</td>
+                <td>Amonestación Verbal</td>
+                <td style="text-align:center;">—</td>
+                <td>Verbal</td>
+              </tr>
+              <tr>
+                <td>Reincidencia Tarjeta Amarilla, 40 Puntos, finaliza la mano, *1-MCP</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>92</strong></td>
+                <td rowspan="2">Cómo se inician las partidas</td>
+                <td>Advertencia Verbal</td>
+                <td style="text-align:center;">—</td>
+                <td>Verbal</td>
+              </tr>
+              <tr>
+                <td>Reincidencia Tarjeta Amarilla, *1-MCP</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td rowspan="3"><strong>93</strong></td>
+                <td rowspan="3">Criterios cuando a los Atletas se le caen las fichas (Ficha Vista)</td>
+                <td>Falsa identificación de la ficha vista, Tarjeta Amarilla y 40 Puntos menos</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td>Mismo Atleta incurre en el error de virarse la ficha más de 2 veces</td>
+                <td style="text-align:center;">—</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td>40 Puntos, penalidad no aplica si fichas se viran involuntariamente. DPC</td>
+                <td style="text-align:center;">—</td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>94</strong></td>
+                <td rowspan="2">Jugada Adelantada</td>
+                <td>Pareja Contraria decide si mezcla la mano, 40 Puntos al infractor, DPC</td>
+                <td style="text-align:center;">—</td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td>Si continúa la mano, se trata como ficha vista Art. 75.</td>
+                <td style="text-align:center;">—</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>95</strong></td>
+                <td rowspan="2">Ficha tocada, Ficha jugada</td>
+                <td>Al mostrarse no tiene cabida al infractor. * DPC</td>
+                <td style="text-align:center;">—</td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td>Si continúa la mano, se trata como ficha vista Art. 75.</td>
+                <td style="text-align:center;">—</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>96 (*2)</strong></td>
+                <td rowspan="2">Cabra, Ficha no tiene cabida por ningún lado</td>
+                <td>O puso la ficha en el extremo equivocado, Tarjeta Amarilla y 80 Puntos *1 - DPC</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>80 Puntos</td>
+              </tr>
+              <tr>
+                <td>Si continúa la mano, se trata como ficha vista Art. 75.</td>
+                <td style="text-align:center;">—</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>97</strong></td>
+                <td rowspan="2">Error de cierre y el juego quedó abierto y se voltearon las Fichas</td>
+                <td>Deciden mezclar la mano y se sanciona infractor, 40 Puntos - DPC</td>
+                <td style="text-align:center;">—</td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td>Si continúa la mano, se trata como ficha vista Art. 75.</td>
+                <td style="text-align:center;">—</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>98</strong></td>
+                <td rowspan="2">Pronunciar la palabra paso, NO gesto, no tocar mesa, etc.</td>
+                <td>Advertencia Verbal</td>
+                <td style="text-align:center;">—</td>
+                <td>Verbal</td>
+              </tr>
+              <tr>
+                <td>Reincidir: Tarjeta Amarilla y descuento de 40 Puntos, la mano concluye. *1</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td><strong>99</strong></td>
+                <td>Pase con Fichas (solicitar presencia del Árbitro)</td>
+                <td>Sanción del Atleta, Tarjeta Amarilla y 80 Puntos *1 - DPC</td>
+                <td style="text-align:center;"><span class="badge-card card-yellow" title="Amarilla">A</span></td>
+                <td>80 Puntos</td>
+              </tr>
+              <tr>
+                <td><strong>(*2)</strong></td>
+                <td>Infracción para imposibilitar (Cierre/Tranca/Dominada)</td>
+                <td>Tarjeta Roja y Pérdida del Partido</td>
+                <td style="text-align:center;"><span class="badge-card card-red" title="Roja">R</span></td>
+                <td>Art. 81</td>
+              </tr>
+              <tr>
+                <td><strong>100</strong></td>
+                <td>Voltear las fichas sin terminar la mano, solicitar al Árbitro</td>
+                <td>40 Puntos, *1 - DPC</td>
+                <td style="text-align:center;">—</td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>101</strong></td>
+                <td rowspan="2">Romper la mano al finalizar la misma</td>
+                <td>Las Fichas deben permanecer en su sitio hasta que se cuente y se registre</td>
+                <td style="text-align:center;">—</td>
+                <td>Verbal</td>
+              </tr>
+              <tr>
+                <td>Reincidencia: 40 Puntos</td>
+                <td style="text-align:center;">—</td>
+                <td>40 Puntos</td>
+              </tr>
+              <tr>
+                <td><strong>*102</strong></td>
+                <td>Alterar hoja de anotación de manera aviesa (malintencionada)</td>
+                <td>Tarjeta Negra artículo 66, conlleva fuera de competencia</td>
+                <td style="text-align:center;"><span class="badge-card card-black" title="Negra">N</span></td>
+                <td>200/0</td>
+              </tr>
+              <tr>
+                <td><strong>*103/104</strong></td>
+                <td>Abandono de Competencia</td>
+                <td>Retirado del torneo, no se permitirá reincorporarse al mismo.</td>
+                <td style="text-align:center;"><span class="badge-card card-red" title="Roja">R</span></td>
+                <td>200/0</td>
+              </tr>
+              <tr>
+                <td rowspan="2"><strong>*105</strong></td>
+                <td rowspan="2">Controversia entre Atletas y ajenos a su partida</td>
+                <td>Amonestados</td>
+                <td style="text-align:center;">—</td>
+                <td>Art. 87</td>
+              </tr>
+              <tr>
+                <td>Continuar controversia, Tarjeta Roja o Negra, según sea el caso</td>
+                <td style="text-align:center;">
+                  <span class="badge-card card-red" title="Roja">R</span>
+                  <span class="badge-card card-black" title="Negra">N</span>
+                </td>
+                <td>Art. 87</td>
+              </tr>
+              <tr>
+                <td><strong>*108</strong></td>
+                <td>Agresión Verbal, Gestual o Física hacia Atletas / Autoridades</td>
+                <td>Tarjeta Roja o Negra dependiendo del criterio del Árbitro</td>
+                <td style="text-align:center;">
+                  <span class="badge-card card-red" title="Roja">R</span>
+                  <span class="badge-card card-black" title="Negra">N</span>
+                </td>
+                <td>200/0</td>
+              </tr>
+              <tr>
+                <td><strong>*109</strong></td>
+                <td>Todo Tipo de Agresión de Atletas, Delegado, Capitán</td>
+                <td>Hacia la comisión Técnica de la F.V.D. Tarjeta Negra por la F.V.D.</td>
+                <td style="text-align:center;"><span class="badge-card card-black" title="Negra">N</span></td>
+                <td>Expulsión</td>
+              </tr>
+              <tr>
+                <td><strong>*110</strong></td>
+                <td>No obedecer las advertencias, Amonestaciones y/o Sanciones</td>
+                <td>Tarjeta Negra, declarando ganadora a la pareja contraria y compañero.</td>
+                <td style="text-align:center;"><span class="badge-card card-black" title="Negra">N</span></td>
+                <td>200/0</td>
+              </tr>
+              <tr>
+                <td><strong>*111</strong></td>
+                <td>No portar armas de fuego de cualquier tipo</td>
+                <td>Sin Excepción de nadie</td>
+                <td style="text-align:center;"><span class="badge-card card-black" title="Negra">N</span></td>
+                <td>Expulsión</td>
+              </tr>
+              <tr>
+                <td><strong>*115</strong></td>
+                <td>Una vez concluida la partida, los participantes</td>
+                <td>Deben abandonar el área de Competencia</td>
+                <td style="text-align:center;">—</td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rules-notes">
+          <h3>Disposiciones y Criterios Oficiales (F.V.D.)</h3>
+          <ul>
+            <li><strong>Nota *1:</strong> La mano termina con la penalización del Atleta y sale el atleta siguiente al que salió, salvo en la modalidad individual donde se descuenta dicho porcentaje solo al infractor y se mezclan las fichas para repetir la salida.</li>
+            <li><strong>Art. 105 Párrafo 1°:</strong> Todas las Sanciones en la modalidad serán personales a excepción de la Presunción de señas (ambos).</li>
+            <li><strong>Glosario de Abreviaturas:</strong> <code>MCP</code> = Mano Con Penalización &nbsp;|&nbsp; <code>DPC</code> = Decide la Pareja Contraria.</li>
+            <li><strong>Art. 84 - Imposición de tarjetas según gravedad:</strong>
+              <div style="margin-top:6px; display:flex; flex-direction:column; gap:4px; padding-left:12px;">
+                <span><span class="badge-card card-yellow">A</span> <strong>1.- Tarjeta Amarilla:</strong> Falta leve o suma de amonestaciones verbales. Se penaliza entre 40 y 80 puntos según magnitud de la falta.</span>
+                <span><span class="badge-card card-red">R</span> <strong>2.- Tarjeta Roja:</strong> Amonestación por falta grave. Equivale a 2 tarjetas amarillas, generando la pérdida del partido con anotación de 200/0.</span>
+                <span><span class="badge-card card-black">N</span> <strong>3.- Tarjeta Negra:</strong> Amonestación por falta Muy Grave. Equivale a 3 tarjetas amarillas o 1 Roja y 1 Amarilla (expulsión del torneo).</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="page" id="page-torneo-detalle">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('torneos')">← Volver a torneos</button>
+        <div class="section-label">Resultado oficial</div>
+        <h2 class="section-title" id="torneoDetalleTitle">—</h2>
+        <p class="section-subtitle" id="torneoDetalleMeta"></p>
+        <div style="overflow-x:auto;">
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Jugador</th>
+                <th>PG-PP</th>
+                <th>EFE</th>
+                <th>AVG</th>
+                <th>PJ</th>
+              </tr>
+            </thead>
+            <tbody id="torneoDetalleBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== LOGIN / REGISTER ========== -->
+  <div class="page" id="page-login">
+    <section>
+      <div class="container" style="max-width:440px;">
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+          <button type="button" class="btn btn-outline" id="btnTabLogin" onclick="switchAuthTab('login')">Iniciar sesión</button>
+          <button type="button" class="btn btn-ghost" id="btnTabRegister" onclick="switchAuthTab('register')">Registrarse</button>
+        </div>
+
+        <div id="authBoxLogin">
+          <div class="section-label">Acceso</div>
+          <h2 class="section-title">Iniciar sesión</h2>
+          <p class="section-subtitle">Acceso de miembros y administradores</p>
+          <form id="loginForm" class="admin-conn-box" onsubmit="handleLogin(event)" style="display:flex;flex-direction:column;gap:12px;">
+            <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;letter-spacing:0.06em;">Email</label>
+            <input type="email" id="loginEmail" class="admin-input" required autocomplete="username" value="">
+            <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;letter-spacing:0.06em;">Contraseña</label>
+            <input type="password" id="loginPassword" class="admin-input" required autocomplete="current-password" value="">
+            <p id="loginError" class="import-status error hidden"></p>
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">Entrar</button>
+          </form>
+        </div>
+
+        <div id="authBoxRegister" class="hidden">
+          <div class="section-label">Unirse a la Familia</div>
+          <h2 class="section-title">Crear Cuenta</h2>
+          <p class="section-subtitle">Regístrate para formar parte del club</p>
+          <form id="registerForm" class="admin-conn-box" onsubmit="handleRegister(event)" style="display:flex;flex-direction:column;gap:12px;">
+            <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;letter-spacing:0.06em;">Nombre Completo *</label>
+            <input type="text" id="regName" class="admin-input" required placeholder="Ej: Vito Corleone">
+            <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;letter-spacing:0.06em;">Alias / Apodo (opcional)</label>
+            <input type="text" id="regAlias" class="admin-input" placeholder="Ej: Don Vito">
+            <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;letter-spacing:0.06em;">Email *</label>
+            <input type="email" id="regEmail" class="admin-input" required placeholder="tuemail@ejemplo.com">
+            <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;letter-spacing:0.06em;">Contraseña *</label>
+            <input type="password" id="regPassword" class="admin-input" required minlength="6" placeholder="Mínimo 6 caracteres">
+            <p id="registerError" class="import-status error hidden"></p>
+            <button type="submit" class="btn btn-primary" style="margin-top:8px;">Registrarse</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== PERFIL DE USUARIO ========== -->
+  <div class="page" id="page-perfil">
+    <section>
+      <div class="container" style="max-width:500px;">
+        <div class="section-label">Mi Cuenta</div>
+        <h2 class="section-title" id="profileTitle">Mi Perfil</h2>
+        <p class="section-subtitle" id="profileEmail">—</p>
+
+        <div id="profilePlayerCard" class="admin-conn-box" style="margin-bottom:20px;display:none;">
+          <h3 style="margin:0 0 8px 0;font-size:1.1rem;color:var(--gold);">Jugador Vinculado</h3>
+          <p id="profilePlayerName" style="margin:0;font-weight:bold;"></p>
+          <p id="profilePlayerStats" style="margin:4px 0 0 0;font-size:0.85rem;color:var(--gray-alias);"></p>
+        </div>
+
+        <form id="profileForm" class="admin-conn-box" onsubmit="saveUserProfile(event)" style="display:flex;flex-direction:column;gap:12px;">
+          <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;">Nombre</label>
+          <input type="text" id="profileName" class="admin-input" required>
+          <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;">Alias / Apodo</label>
+          <input type="text" id="profileAlias" class="admin-input">
+          <label style="font-size:0.75rem;color:var(--gray-alias);text-transform:uppercase;">Nueva Contraseña (dejar vacío si no cambia)</label>
+          <input type="password" id="profilePassword" class="admin-input" minlength="6">
+          <p id="profileFormStatus" class="admin-form-status"></p>
+          <button type="submit" class="btn btn-primary" style="margin-top:8px;">Guardar Cambios</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== ADMIN ========== -->
+  <div class="page" id="page-admin">
+    <section>
+      <div class="container">
+        <div class="section-label">Administración</div>
+        <h2 class="section-title">Panel Admin</h2>
+        <p class="section-subtitle">Gestiona jugadores, torneos, avisos e importaciones.</p>
+
+        <div class="admin-conn-box" id="adminConnBox">
+          <div class="admin-conn-row">
+            <span id="adminConnDot" class="conn-dot offline"></span>
+            <span id="adminConnLabel">Comprobando conexión…</span>
+          </div>
+          <div class="admin-api-row">
+            <label for="apiBaseInput">API Backend</label>
+            <input type="url" id="apiBaseInput" class="admin-input" placeholder="http://localhost:3000">
+            <button class="btn btn-outline" id="btnSaveApiBase" type="button">Guardar</button>
+          </div>
+        </div>
+
+        <div class="cards-grid" style="margin-top:28px;">
+          <div class="card" style="cursor:pointer;" onclick="showPage('admin-players')">
+            <div class="section-label" style="margin-bottom:12px;">01</div>
+            <h3 class="card-title">Jugadores</h3>
+            <p class="card-desc">Crear, editar o desactivar jugadores del ranking.</p>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showPage('admin-tournaments')">
+            <div class="section-label" style="margin-bottom:12px;">02</div>
+            <h3 class="card-title">Torneos</h3>
+            <p class="card-desc">Añadir, editar o eliminar torneos del archivo.</p>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showPage('admin-notifications')">
+            <div class="section-label" style="margin-bottom:12px;">03</div>
+            <h3 class="card-title">Avisos in-app</h3>
+            <p class="card-desc">Publicar, editar o borrar notificaciones del centro de avisos.</p>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showPage('import')">
+            <div class="section-label" style="margin-bottom:12px;">04</div>
+            <h3 class="card-title">Importar BetaDomino</h3>
+            <p class="card-desc">Sube un Excel de resultados, revisa coincidencias y confirma el torneo.</p>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showPage('import-history')">
+            <div class="section-label" style="margin-bottom:12px;">05</div>
+            <h3 class="card-title">Historial de importaciones</h3>
+            <p class="card-desc">Batches en preview, confirmados o rechazados.</p>
+          </div>
+          <div class="card" style="cursor:pointer;" onclick="showPage('admin-club-aliases')">
+            <div class="section-label" style="margin-bottom:12px;">07</div>
+            <h3 class="card-title">Alias de Clubes</h3>
+            <p class="card-desc">Mapea variaciones de nombres de clubes a nombres canónicos.</p>
+          </div>
+          <div class="card">
+            <div class="section-label" style="margin-bottom:12px;">06</div>
+            <h3 class="card-title">Push de prueba</h3>
+            <p class="card-desc" style="margin-bottom:14px;">Envía un aviso push + in-app a los suscriptores.</p>
+            <button class="btn btn-outline" type="button" id="btnTestPush" style="width:100%;">Enviar prueba</button>
+            <p id="pushSendStatus" style="margin-top:10px;font-size:0.8rem;color:var(--gray-alias);"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <!-- ========== ADMIN PLAYERS ========== -->
+  <div class="page" id="page-admin-players">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('admin')">← Volver a Admin</button>
+        <div class="section-label">CRUD</div>
+        <h2 class="section-title">Jugadores</h2>
+        <p class="section-subtitle">Gestiona la plantilla del club.</p>
+
+        <form id="playerForm" class="admin-form" onsubmit="savePlayer(event)">
+          <input type="hidden" id="playerEditId" value="">
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label for="playerName">Nombre *</label>
+              <input type="text" id="playerName" class="admin-input" required placeholder="NOMBRE APELLIDO">
+            </div>
+            <div class="admin-field">
+              <label for="playerClub">Club</label>
+              <input type="text" id="playerClub" class="admin-input" placeholder="VALERA">
+            </div>
+          </div>
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label for="playerWins">PG (victorias)</label>
+              <input type="number" id="playerWins" class="admin-input" min="0" value="0">
+            </div>
+            <div class="admin-field">
+              <label for="playerLosses">PP (derrotas)</label>
+              <input type="number" id="playerLosses" class="admin-input" min="0" value="0">
+            </div>
+            <div class="admin-field">
+              <label for="playerTournaments">Torneos</label>
+              <input type="number" id="playerTournaments" class="admin-input" min="0" value="0">
+            </div>
+          </div>
+          <div class="admin-field">
+            <label for="playerUserId">Cuenta de Usuario Vinculada</label>
+            <select id="playerUserId" class="admin-input">
+              <option value="">-- Sin cuenta de usuario --</option>
+            </select>
+          </div>
+          <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSavePlayer">Añadir jugador</button>
+            <button type="button" class="btn btn-ghost hidden" id="btnCancelPlayerEdit" onclick="resetPlayerForm()">Cancelar</button>
+          </div>
+          <p id="playerFormStatus" class="admin-form-status"></p>
+        </form>
+
+        <div class="admin-toolbar">
+          <input type="search" id="playerSearch" class="admin-input" placeholder="Buscar por nombre o club…" oninput="filterPlayers()">
+        </div>
+        <div id="adminPlayersList" class="admin-list">Cargando…</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== ADMIN TOURNAMENTS ========== -->
+  <div class="page" id="page-admin-tournaments">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('admin')">← Volver a Admin</button>
+        <div class="section-label">CRUD</div>
+        <h2 class="section-title">Torneos</h2>
+        <p class="section-subtitle">Alta y mantenimiento del archivo de torneos.</p>
+
+        <form id="tournamentForm" class="admin-form" onsubmit="saveTournament(event)">
+          <input type="hidden" id="tournamentEditId" value="">
+          <div class="admin-form-row">
+            <div class="admin-field" style="flex:2;">
+              <label for="tournamentName">Nombre *</label>
+              <input type="text" id="tournamentName" class="admin-input" required placeholder="Copa …">
+            </div>
+            <div class="admin-field">
+              <label for="tournamentDate">Fecha</label>
+              <input type="date" id="tournamentDate" class="admin-input">
+            </div>
+          </div>
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label for="tournamentType">Tipo</label>
+              <select id="tournamentType" class="admin-input">
+                <option value="individual">Individual</option>
+                <option value="parejas">Parejas</option>
+                <option value="equipos">Equipos</option>
+              </select>
+            </div>
+            <div class="admin-field">
+              <label for="tournamentStatus">Estado</label>
+              <select id="tournamentStatus" class="admin-input">
+                <option value="upcoming">Próximo</option>
+                <option value="ongoing">En curso</option>
+                <option value="finished">Finalizado</option>
+              </select>
+            </div>
+            <div class="admin-field">
+              <label for="tournamentLocation">Lugar</label>
+              <input type="text" id="tournamentLocation" class="admin-input" placeholder="Valera">
+            </div>
+          </div>
+          <div class="admin-field">
+            <label for="tournamentDesc">Descripción</label>
+            <input type="text" id="tournamentDesc" class="admin-input" placeholder="Opcional">
+          </div>
+          <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSaveTournament">Añadir torneo</button>
+            <button type="button" class="btn btn-ghost hidden" id="btnCancelTournamentEdit" onclick="resetTournamentForm()">Cancelar</button>
+          </div>
+          <p id="tournamentFormStatus" class="admin-form-status"></p>
+        </form>
+
+        <div id="adminTournamentsList" class="admin-list">Cargando…</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== ADMIN NOTIFICATIONS ========== -->
+  <div class="page" id="page-admin-notifications">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('admin')">← Volver a Admin</button>
+        <div class="section-label">CRUD</div>
+        <h2 class="section-title">Avisos in-app</h2>
+        <p class="section-subtitle">Publica mensajes que verán todos en la campana.</p>
+
+        <form id="notifAdminForm" class="admin-form" onsubmit="saveAdminNotification(event)">
+          <input type="hidden" id="notifEditId" value="">
+          <div class="admin-field">
+            <label for="notifTitle">Título *</label>
+            <input type="text" id="notifTitle" class="admin-input" required placeholder="Novedad del club">
+          </div>
+          <div class="admin-field">
+            <label for="notifBody">Mensaje *</label>
+            <textarea id="notifBody" class="admin-input" rows="3" required placeholder="Texto del aviso"></textarea>
+          </div>
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label for="notifType">Tipo</label>
+              <select id="notifType" class="admin-input">
+                <option value="info">Info</option>
+                <option value="ranking">Ranking</option>
+                <option value="tournament">Torneo</option>
+                <option value="result">Resultado</option>
+                <option value="success">Éxito</option>
+                <option value="system">Sistema</option>
+              </select>
+            </div>
+            <div class="admin-field">
+              <label for="notifUrl">Enlace (opcional)</label>
+              <input type="text" id="notifUrl" class="admin-input" placeholder="./index.html">
+            </div>
+          </div>
+          <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSaveNotif">Publicar aviso</button>
+            <button type="button" class="btn btn-ghost hidden" id="btnCancelNotifEdit" onclick="resetNotifForm()">Cancelar</button>
+          </div>
+          <p id="notifFormStatus" class="admin-form-status"></p>
+        </form>
+
+        <div id="adminNotifsList" class="admin-list">Cargando…</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ========== ADMIN CLUB ALIASES ========== -->
+  <div class="page" id="page-admin-club-aliases">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('admin')">← Volver a Admin</button>
+        <div class="section-label">Normalización</div>
+        <h2 class="section-title">Alias de Clubes</h2>
+        <p class="section-subtitle">Mapea nombres recibidos en Excel al club canónico.</p>
+
+        <form id="clubAliasForm" class="admin-form" onsubmit="saveAdminClubAlias(event)">
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label for="aliasRaw">Alias (Ej: S.MENDOZA) *</label>
+              <input type="text" id="aliasRaw" class="admin-input" required placeholder="VARIACION">
+            </div>
+            <div class="admin-field">
+              <label for="aliasCanonical">Club Canónico (Ej: S MENDOZA) *</label>
+              <input type="text" id="aliasCanonical" class="admin-input" required placeholder="CANONICO">
+            </div>
+          </div>
+          <div class="admin-form-actions">
+            <button type="submit" class="btn btn-primary" id="btnSaveAlias">Guardar Alias</button>
+          </div>
+          <p id="clubAliasFormStatus" class="admin-form-status"></p>
+        </form>
+
+        <div id="adminClubAliasesList" class="admin-list">Cargando…</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="page" id="page-import">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('admin')">← Volver a Admin</button>
+        <div class="section-label">BetaDomino</div>
+        <h2 class="section-title">Importar resultados</h2>
+        <p class="section-subtitle">Arrastra el Excel del torneo o selecciónalo. Se detecta automáticamente Individual / Parejas.</p>
+
+        <div id="importDropzone" class="import-dropzone">
+          <div class="import-dropzone-inner">
+            <div class="import-drop-icon">⬆</div>
+            <p class="import-drop-title">Arrastra tu Excel aquí</p>
+            <p class="import-drop-sub">.xlsx o .xls · BetaDomino</p>
+            <button class="btn btn-primary" type="button" id="btnSelectFile">Seleccionar archivo</button>
+            <input type="file" id="importFileInput" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
+          </div>
+        </div>
+
+        <div id="importUploadStatus" class="import-status hidden"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="page" id="page-import-preview">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('import')">← Nueva importación</button>
+        <div class="section-label">Revisión</div>
+        <h2 class="section-title" id="previewTitle">Preview de importación</h2>
+        <p class="section-subtitle" id="previewMeta"></p>
+
+        <div class="preview-stats" id="previewStats"></div>
+
+        <div class="preview-actions-bar">
+          <button class="btn btn-outline" type="button" id="btnAutoResolve">Resolver automáticos</button>
+          <a href="#" id="btnOpenReactPreview" class="btn btn-outline" style="display:none;" target="_self">🚀 Vista Avanzada (React)</a>
+          <button class="btn btn-primary" type="button" id="btnConfirmImport" disabled>Confirmar importación</button>
+        </div>
+
+        <div id="previewAlert" class="import-status hidden"></div>
+
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table class="ranking-table preview-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Jugador (Excel)</th>
+                <th>Club</th>
+                <th>Match</th>
+                <th>Acción</th>
+                <th>PG-PP</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="page" id="page-import-history">
+    <section>
+      <div class="container">
+        <button class="btn btn-outline" style="margin-bottom:24px;" onclick="showPage('admin')">← Volver a Admin</button>
+        <div class="section-label">Auditoría</div>
+        <h2 class="section-title">Historial de importaciones</h2>
+        <p class="section-subtitle">Batches recientes del backend.</p>
+        <div id="historyList" class="history-list">
+          <p style="color:var(--gray-alias);">Cargando…</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-logo">Cosa Nostra</div>
+      <p class="footer-copy">The Godfather Club · Domino Legends · Venezuela</p>
+      <p class="footer-copy" style="margin-top:8px;">Datos importados desde BetaDomino · © 2026</p>
+    </div>
+  </footer>
+
+
+  <!-- In-app notifications panel -->
+  <div class="notif-panel-overlay" id="notifOverlay" hidden></div>
+  <div class="notif-panel" id="notifPanel" role="dialog" aria-label="Notificaciones" hidden>
+    <div class="notif-panel-header">
+      <div class="notif-panel-title">Avisos</div>
+      <div class="notif-panel-actions">
+        <button type="button" id="notifMarkAll">Marcar leídas</button>
+        <button type="button" id="notifClose" aria-label="Cerrar">✕</button>
+      </div>
+    </div>
+    <div class="notif-list" id="notifList">
+      <div class="notif-empty">Cargando…</div>
+    </div>
+  </div>
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <!-- Player Detail Modal (P0) -->
+  <div class="player-modal-overlay" id="playerModalOverlay" role="dialog" aria-modal="true" aria-labelledby="playerModalName" hidden>
+    <div class="player-modal" id="playerModal" role="document">
+      <div class="player-modal-handle" aria-hidden="true"></div>
+      <button type="button" class="player-modal-close" id="playerModalClose" aria-label="Cerrar ficha">✕</button>
+      <div id="playerModalContent"></div>
+    </div>
+  </div>
+
+  <!-- Botón flotante TikTok -->
+  <a href="https://www.tiktok.com/@natale4198?_r=1&_t=ZS-99w7IBChnY0"
+     class="tiktok-float" target="_blank" rel="noopener" title="TikTok @natale4198" aria-label="TikTok @natale4198">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+    </svg>
+  </a>
+
+  <!-- Botón flotante WhatsApp -->
+  <a href="https://chat.whatsapp.com/KFBauNLdNGq4C9l4AZmJiC"
+     class="wa-float" target="_blank" rel="noopener" title="Comunidad de WhatsApp" aria-label="Comunidad de WhatsApp">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  </a>
+
+  <!-- Banner notificaciones push -->
+  <div id="pushNotifyBar">
+    <p>Activa avisos de <strong>ranking y torneos</strong></p>
+    <button class="btn btn-primary" id="btnEnablePush" style="padding:8px 14px;font-size:0.85rem;">Activar</button>
+    <button class="btn btn-ghost" id="btnDismissPush" style="padding:8px 10px;font-size:0.85rem;">✕</button>
+  </div>
+
+  <!-- Banner instalar PWA -->
+  <div id="pwaInstallBar">
+    <p>Instala <strong>Cosa Nostra</strong> en tu teléfono</p>
+    <button class="btn btn-primary" id="btnInstallPwa" style="padding:8px 14px;font-size:0.85rem;">Instalar</button>
+    <button class="btn btn-ghost" id="btnDismissPwa" style="padding:8px 10px;font-size:0.85rem;">✕</button>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Service Worker + Web Push — solo HTTPS / localhost
+    (function registerSW() {
+      try {
+        var protocol = location.protocol;
+        var host = location.hostname;
+        if (protocol !== 'https:' && host !== 'localhost' && host !== '127.0.0.1') {
+          return;
+        }
+        if (!('serviceWorker' in navigator)) return;
+        window.addEventListener('load', function () {
+          navigator.serviceWorker
+            .register('./sw.js', { scope: './' })
+            .then(function (reg) {
+              window.__cnSwReg = reg;
+              if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+              reg.addEventListener('updatefound', function () {
+                var installing = reg.installing;
+                if (!installing) return;
+                installing.addEventListener('statechange', function () {
+                  if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                    // Nueva versión lista; se activa en próximo reload
+                    console.info('[sw] update installed');
+                  }
+                });
+              });
+            })
+            .catch(function (err) {
+              console.warn('[sw] register failed', err);
+            });
+
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            // SW tomó control; no forzamos reload automático
+          });
+
+          navigator.serviceWorker.addEventListener('message', function (event) {
+            var data = event.data || {};
+            if (data.type === 'PUSH_SUBSCRIPTION_CHANGE' && typeof window.resyncPushSubscription === 'function') {
+              window.resyncPushSubscription(data.oldEndpoint);
+            }
+            if (data.type === 'PUSH_NAVIGATE' && data.url && typeof window.handlePushNavigate === 'function') {
+              window.handlePushNavigate(data.url);
+            }
+          });
+        });
+      } catch (e) {
+        /* SW unavailable */
+      }
+    })();
+
+    // Install prompt
+    let deferredPrompt = null;
+    const bar = document.getElementById('pwaInstallBar');
+    const btnInstall = document.getElementById('btnInstallPwa');
+    const btnDismiss = document.getElementById('btnDismissPwa');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (!localStorage.getItem('cn_pwa_dismissed')) {
+        bar.classList.add('show');
+      }
+    });
+
+    btnInstall?.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      bar.classList.remove('show');
+    });
+
+    btnDismiss?.addEventListener('click', () => {
+      bar.classList.remove('show');
+      localStorage.setItem('cn_pwa_dismissed', '1');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      bar.classList.remove('show');
+      deferredPrompt = null;
+    });
+  </script>
+</body>
+</html>

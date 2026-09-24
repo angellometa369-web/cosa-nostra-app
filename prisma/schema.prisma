@@ -1,0 +1,409 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// AUTH & USERS
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  alias         String?
+  avatarUrl     String?
+  role          String    @default("soldado") // don | capo | consigliere | soldado | aspirante
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  player        Player?
+  accounts      Account[]
+  sessions      Session[]
+  confirmedImports ImportBatch[] @relation("ConfirmedBy")
+  decisions     ImportDecision[] @relation("DecidedBy")
+  pushSubscriptions PushSubscription[]
+  notifications     InAppNotification[]
+  notificationReads NotificationRead[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// =============================================================================
+// PLAYERS & EXTERNAL IDENTITIES
+// =============================================================================
+
+model Player {
+  id                String   @id @default(cuid())
+  userId            String?  @unique // opcional: jugadores importados pueden no tener cuenta aún
+  displayName       String
+  normalizedName    String   // nombre normalizado para matching
+  club              String?
+  normalizedClub    String?  // club normalizado
+  rankingPoints     Int      @default(1000)
+  efficiency        Float    @default(0)
+  wins              Int      @default(0)
+  losses            Int      @default(0)
+  tournamentsPlayed Int      @default(0)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  externalIdentities ExternalIdentity[]
+  matchPlayers      MatchPlayer[]
+  rankingSnapshots  RankingSnapshot[]
+  rankingChanges    RankingChange[]
+  tournamentResults TournamentResult[]
+
+  @@index([normalizedName])
+  @@index([normalizedClub])
+  @@index([active])
+}
+
+/// Identidades externas (BetaDomino y futuros sistemas)
+model ExternalIdentity {
+  id          String   @id @default(cuid())
+  provider    String   // "betadomino" | futuro
+  externalId  String   // ID normalizado del sistema externo
+  playerId    String
+  metadata    String?  // JSON opcional
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([playerId])
+}
+
+/// Alias de clubs para normalización configurable
+model ClubAlias {
+  id          String   @id @default(cuid())
+  alias       String   @unique // valor crudo o variante
+  canonical   String   // valor canónico que se usa en GFCN
+  createdAt   DateTime @default(now())
+
+  @@index([canonical])
+}
+
+// =============================================================================
+// SEASONS, TOURNAMENTS & RESULTS
+// =============================================================================
+
+model Season {
+  id          String   @id @default(cuid())
+  name        String
+  year        Int
+  startDate   DateTime
+  endDate     DateTime?
+  status      String   @default("active") // active | closed
+  createdAt   DateTime @default(now())
+
+  tournaments Tournament[]
+  rankings    RankingSnapshot[]
+}
+
+model Tournament {
+  id              String   @id @default(cuid())
+  seasonId        String?
+  name            String
+  type            String   @default("individual") // individual | parejas | equipos
+  format          String?  // swiss | knockout | round-robin | etc.
+  status          String   @default("upcoming") // upcoming | ongoing | finished
+  startDate       DateTime?
+  endDate         DateTime?
+  location        String?
+  description     String?
+  roundCount      Int?
+
+  // Identidad externa (importación)
+  externalSource  String?  // "betadomino"
+  externalKey     String?  // betadomino|individual|Nombre|YYYY-MM-DD|ronda
+  importBatchId   String?  @unique
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  season          Season?  @relation(fields: [seasonId], references: [id])
+  importBatch     ImportBatch? @relation(fields: [importBatchId], references: [id])
+  matches         Match[]
+  results         TournamentResult[]
+
+  @@unique([externalKey])
+  @@index([status])
+  @@index([type])
+  @@index([externalSource])
+}
+
+/// Resultado final de un jugador (o pareja) en un torneo importado
+model TournamentResult {
+  id              String   @id @default(cuid())
+  tournamentId    String
+  playerId        String
+  position        Int
+  pairId          String?  // identificador de pareja (solo en parejas)
+  partnerPlayerId String?  // el otro miembro de la pareja (opcional)
+
+  // Estadísticas de BetaDomino
+  pj              Int      // partidas jugadas
+  pg              Int      // partidas ganadas
+  pp              Int      // partidas perdidas
+  efe             Int      // diferencial / efectividad
+  pf              Int      // puntos a favor
+  pc              Int      // puntos en contra
+  pm              Int      @default(0)
+  avg             Float    // 0.0 – 1.0
+  sanctions       Int?
+
+  // Datos crudos de auditoría
+  rawName         String?
+  rawClub         String?
+  rawBetaId       String?
+
+  createdAt       DateTime @default(now())
+
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player          Player     @relation(fields: [playerId], references: [id])
+
+  @@unique([tournamentId, playerId])
+  @@index([playerId])
+  @@index([position])
+}
+
+model Match {
+  id           String   @id @default(cuid())
+  tournamentId String
+  tableNumber  Int?
+  status       String   @default("pending") // pending | playing | finished
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  winnerSide   String?  // A | B
+  createdAt    DateTime @default(now())
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  players      MatchPlayer[]
+}
+
+model MatchPlayer {
+  id        String @id @default(cuid())
+  matchId   String
+  playerId  String
+  side      String // A | B
+  points    Int    @default(0)
+  position  Int?   // 1 o 2 dentro del partido
+
+  match     Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player    Player @relation(fields: [playerId], references: [id])
+
+  @@unique([matchId, playerId])
+}
+
+model RankingSnapshot {
+  id            String   @id @default(cuid())
+  seasonId      String
+  playerId      String
+  position      Int
+  points        Int
+  efficiency    Float
+  recordedAt    DateTime @default(now())
+  /// Origen del snapshot (importación que lo generó)
+  importBatchId String?
+
+  season        Season   @relation(fields: [seasonId], references: [id])
+  player        Player   @relation(fields: [playerId], references: [id])
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id])
+
+  @@unique([seasonId, playerId, recordedAt])
+  @@index([seasonId, position])
+  @@index([importBatchId])
+}
+
+/// Auditoría de movimiento de ranking asociada a una importación confirmada.
+/// Responde: "¿qué cambió cuando importamos este torneo?"
+model RankingChange {
+  id                 String   @id @default(cuid())
+  importBatchId      String
+  seasonId           String
+  playerId           String
+  previousPosition   Int?     // null = no estaba en ranking previo
+  newPosition        Int
+  previousPoints     Int?
+  newPoints          Int
+  previousWins       Int?
+  newWins            Int
+  previousLosses     Int?
+  newLosses          Int
+  previousEfficiency Float?
+  newEfficiency      Float
+  /// previousPosition - newPosition (positivo = subió puestos)
+  deltaPosition      Int?
+  createdAt          DateTime @default(now())
+
+  importBatch        ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  player             Player      @relation(fields: [playerId], references: [id])
+
+  @@index([importBatchId])
+  @@index([playerId])
+  @@index([seasonId])
+}
+
+
+// =============================================================================
+// IMPORT SYSTEM (BetaDomino → GFCN)
+// =============================================================================
+
+model ImportBatch {
+  id               String    @id @default(cuid())
+  source           String    @default("betadomino")
+  originalFilename String
+  fileHash         String    // SHA-256 del archivo físico
+  externalKey      String    // identidad lógica del torneo
+  detectedType     String    // individual | parejas
+  tournamentName   String
+  tournamentDate   String    // YYYY-MM-DD
+  roundNumber      Int?
+  status           String    @default("preview") // preview | confirmed | rejected | error
+  statsJson        String?   // JSON: { totalPlayers, recognized, new, conflicts, ... }
+  notes            String?
+  errorMessage     String?
+
+  createdAt        DateTime  @default(now())
+  confirmedAt      DateTime?
+  confirmedById    String?
+
+  confirmedBy      User?     @relation("ConfirmedBy", fields: [confirmedById], references: [id])
+  decisions        ImportDecision[]
+  tournament       Tournament?
+  rankingSnapshots RankingSnapshot[]
+  rankingChanges   RankingChange[]
+
+  @@unique([fileHash])
+  @@index([externalKey])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ImportDecision {
+  id               String    @id @default(cuid())
+  importBatchId    String
+  rowIndex         Int       // posición de la fila en el Excel (0-based o 1-based)
+  action           String    // accept_match | create_new | link_existing | ignore
+  proposedPlayerId String?   // lo que propuso el matcher
+  selectedPlayerId String?   // lo que decidió el administrador
+  confidence       Float?
+  matchStatus      String    // exact_id | exact_name | fuzzy_name | new | conflict
+  rawDataJson      String    // snapshot completo de la fila original
+
+  decidedById      String?
+  decidedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  importBatch      ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  decidedBy        User?       @relation("DecidedBy", fields: [decidedById], references: [id])
+
+  @@index([importBatchId])
+  @@index([matchStatus])
+}
+
+
+// =============================================================================
+// PUSH NOTIFICATIONS (Web Push)
+// =============================================================================
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  userId    String?
+  /// topics JSON array e.g. ["ranking","tournaments","results"]
+  topics    String   @default("[\"ranking\",\"tournaments\",\"results\"]")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([active])
+}
+
+
+// =============================================================================
+// IN-APP NOTIFICATIONS
+// =============================================================================
+
+model InAppNotification {
+  id        String   @id @default(cuid())
+  /// null = broadcast (todos los usuarios / público)
+  userId    String?
+  title     String
+  body      String
+  /// info | success | ranking | tournament | system | result
+  type      String   @default("info")
+  url       String?
+  /// optional topic for filtering
+  topic     String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reads     NotificationRead[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model NotificationRead {
+  id             String   @id @default(cuid())
+  notificationId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  notification   InAppNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId])
+}
