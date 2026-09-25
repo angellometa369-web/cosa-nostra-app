@@ -1,3 +1,4 @@
+// @ts-ignore
 import webpush from 'web-push'
 
 const keys = webpush.generateVAPIDKeys()

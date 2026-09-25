@@ -64,7 +64,7 @@ const testRows: RawPlayerRow[] = [
     nameRaw: "DON VITO CORLEONE",
     betaId: "010",
     clubRaw: "VALERA",
-    pj: 5, pg: 5, pp: 0, efe: 100, pf: 500, pc: 400, pm: 0, avg: 1,
+    pj: 5, pg: 5, pp: 0, efe: 100, pf: 500, pc: 400, pm: 0, avg: 1, sanctions: null,
   },
   {
     rowIndex: 1,
@@ -72,7 +72,7 @@ const testRows: RawPlayerRow[] = [
     nameRaw: "SONNY CORLEONE",
     betaId: null,
     clubRaw: "VALERA",
-    pj: 5, pg: 4, pp: 1, efe: 80, pf: 480, pc: 400, pm: 0, avg: 0.8,
+    pj: 5, pg: 4, pp: 1, efe: 80, pf: 480, pc: 400, pm: 0, avg: 0.8, sanctions: null,
   },
   {
     rowIndex: 2,
@@ -80,7 +80,7 @@ const testRows: RawPlayerRow[] = [
     nameRaw: "FREDDO CORLEONE",
     betaId: null,
     clubRaw: "VALERA",
-    pj: 5, pg: 2, pp: 3, efe: -10, pf: 390, pc: 400, pm: 0, avg: 0.4,
+    pj: 5, pg: 2, pp: 3, efe: -10, pf: 390, pc: 400, pm: 0, avg: 0.4, sanctions: null,
   },
 ];
 

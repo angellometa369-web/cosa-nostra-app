@@ -38,7 +38,7 @@ export function parseBetaDominoFile(
   const fileMeta = parseFilenameMeta(filename);
 
   // --- Detección de formato ---
-  let detectedType: DetectedType;
+  let detectedType: DetectedType = "individual";
   let rows: RawPlayerRow[] = [];
   let parseWarnings: string[] = [];
 

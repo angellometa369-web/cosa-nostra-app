@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       orderBy: [{ wins: 'desc' }, { displayName: 'asc' }],
       include: {
         user: { select: { id: true, email: true, role: true } },
-        _count: { select: { results: true } },
+        _count: { select: { tournamentResults: true } },
       },
     })
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         rankingPoints: p.rankingPoints,
         tournamentsPlayed: p.tournamentsPlayed,
         active: p.active,
-        resultsCount: p._count.results,
+        resultsCount: p._count.tournamentResults,
         userId: p.user?.id ?? null,
         userEmail: p.user?.email ?? null,
         userRole: p.user?.role ?? null,

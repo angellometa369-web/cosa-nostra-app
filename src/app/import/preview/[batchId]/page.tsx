@@ -72,12 +72,12 @@ async function loadBatchFromDb(batchId: string) {
           pp: raw.pp ?? 0,
           efe: raw.efe ?? 0,
           avg: raw.avg ?? 0,
-          matchStatus: d.matchStatus,
+          matchStatus: d.matchStatus as any,
           confidence: d.confidence,
           proposedPlayerId: d.proposedPlayerId,
           needsReview:
             d.matchStatus === "fuzzy_name" || d.matchStatus === "conflict",
-          action: d.action || null,
+          action: (d.action || null) as any,
           selectedPlayerId: d.selectedPlayerId,
         };
       }),
