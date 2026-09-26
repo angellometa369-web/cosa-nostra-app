@@ -34,7 +34,7 @@ Abre **http://localhost:3000**
 
 | Rol   | Email                     | Contraseña      |
 |-------|---------------------------|-----------------|
-| Admin | natalebong@hotmail.com    | Natale12040852  |
+| Admin |    | |
 | Demo  | jugador1@cosanostra.club  | cosa2026        |
 
 En el login deja vacía la URL del API.
